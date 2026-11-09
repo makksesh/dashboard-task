@@ -1,0 +1,44 @@
+prepp{% set prep = data['preparation'] %}{% set weld = data['welding_need'] %}{% set docs = data['documentation'] %}
+<div class="metric-columns">
+  <section class="metric-column" aria-labelledby="prep-metrics">
+    <h2 id="prep-metrics">Заготовка</h2>
+    <div class="metric-item"><span>Общий план</span><strong data-live-key="prep-plan">{{ prep['plan_qty'] }}</strong><small>{{ prep['confirmed'] }} принятых строк из {{ prep['rows'] }}</small></div>
+    <div class="metric-item"><span>Общий факт</span><strong data-live-key="prep-fact">{{ prep['fact_qty'] }}</strong><small>По принятым строкам</small></div>
+    <div class="metric-item"><span>Выполнение плана</span><strong data-live-key="prep-percent">{{ '%.1f'|format(data['prep_percent']) if data['prep_percent'] is not none else '—' }}{% if data['prep_percent'] is not none %}%{% endif %}</strong><small>{% if data['prep_percent'] is not none %}{% else %}Нет принятого плана{% endif %}</small></div>
+    <div class="metric-item"><span>Отклонение</span><strong data-live-key="prep-deviation">{{ prep['fact_qty'] - prep['plan_qty'] }}</strong></div>
+  </section>
+  <section class="metric-column" aria-labelledby="weld-metrics">
+    <h2 id="weld-metrics">Потребность сварки</h2>
+    <div class="metric-item"><span>Общая потребность</span><strong data-live-key="weld-need">{{ weld['need_qty'] }}</strong><small>{{ weld['confirmed'] }} принятых строк из {{ weld['rows'] }}</small></div>
+    <div class="metric-item"><span>Факт сварки</span><strong>—</strong><small>В исходной таблице нет такого поля</small></div>
+    <div class="metric-item"><span>Выполнение</span><strong>—</strong><small>Рассчитать можно после появления факта сварки</small></div>
+    <div class="metric-item"><span>Отклонение</span><strong>—</strong><small>Рассчитать можно после появления факта сварки</small></div>
+  </section>
+  <section class="metric-column" aria-labelledby="docs-metrics">
+    <h2 id="docs-metrics">Документация</h2>
+    <div class="metric-item"><span>Общий план</span><strong data-live-key="docs-plan">{{ docs['plan_docs'] }}</strong><small>{{ docs['confirmed'] }} принятых строк из {{ docs['rows'] }}</small></div>
+    <div class="metric-item"><span>Общий факт</span><strong data-live-key="docs-fact">{{ docs['fact_docs'] }}</strong><small>По принятым строкам</small></div>
+    <div class="metric-item"><span>Выполнение плана</span><strong data-live-key="docs-percent">{{ '%.1f'|format(data['docs_percent']) if data['docs_percent'] is not none else '—' }}{% if data['docs_percent'] is not none %}%{% endif %}</strong><small>{% if data['docs_percent'] is not none %}{% else %}Нет принятого плана{% endif %}</small></div>
+    <div class="metric-item"><span>Отклонение</span><strong data-live-key="docs-deviation">{{ docs['fact_docs'] - docs['plan_docs'] }}</strong></div>
+  </section>
+</div>
+{% if prep['confirmed'] != prep['rows'] or docs['confirmed'] != docs['rows'] or weld['confirmed'] != weld['rows'] %}<div class="notice info">Показатели рассчитаны по принятым строкам. Строки на проверке пока не учтены.</div>{% endif %}
+<div class="section-grid">
+  <section class="panel">
+    <div class="panel-heading"><h2>Связь партий</h2><span class="badge">Партий: {{ data['batches']|length }}</span></div>
+    <p class="muted">Возможное непокрытие по проверенным партиям: <strong>{{ data['known_gap'] }}</strong>.</p>
+    <p class="muted">Потребность без подтверждённого факта заготовки: <strong>{{ data['unknown_need'] }}</strong>.</p>
+    <p class="hint">Сопоставление по batch_id. Это не складской остаток и не факт выполнения сварки.</p>
+    <div class="table-scroll"><table class="summary-table"><thead><tr><th>Партия</th><th>План</th><th>Факт</th><th>Потребность</th><th>Возможное непокрытие</th><th>Статус</th></tr></thead><tbody>
+      {% for row in display_batches %}<tr><td>{{ row['batch_id'] }}</td><td>{{ row['plan_qty'] if row['plan_qty'] is not none else '—' }}</td><td>{{ row['fact_qty'] if row['fact_qty'] is not none else '—' }}</td><td>{{ row['need_qty'] if row['need_qty'] is not none else '—' }}</td><td>{{ row['possible_gap'] if row['possible_gap'] is not none else '—' }}</td><td><span class="status {% if row['link_status'] == 'Подтверждено' %}approved{% elif row['link_status'] == 'Требует проверки' %}pending{% else %}neutral{% endif %}">{{ row['link_status'] }}</span></td></tr>{% else %}<tr><td colspan="6" class="empty-cell">Загрузите данные на страницах таблиц</td></tr>{% endfor %}
+    </tbody><tfoot><tr class="total-row"><th>Итого</th><td>{{ data['batch_totals']['plan_qty'] }}</td><td>{{ data['batch_totals']['fact_qty'] }}</td><td>{{ data['batch_totals']['need_qty'] }}</td><td>{{ data['batch_totals']['possible_gap'] }}</td><td></td></tr></tfoot></table></div>
+  </section>
+  <section class="panel quick-links"><h2>Проверка данных</h2><p class="muted">Откройте участок, чтобы перейти к проблемной строке.</p>
+    {% for source, label in labels.items() %}<a href="/tables/{{ source }}" class="issue-summary"><span>{{ label }}</span><strong>{{ issues[source] }}</strong></a>{% endfor %}
+    <a class="secondary-button report-link" href="/report?start={{ start.isoformat() }}&amp;end={{ end.isoformat() }}">Скачать отчёт XLSX</a>
+  </section>
+</div>
+<div class="charts-grid">
+  <section class="panel"><h2>Заготовка по дням</h2>{% for row in prep_chart %}<div class="chart-row"><span>{{ row['date'] }}</span><div class="bars"><div class="bar plan" style="width:{{ row['plan_width'] }}%" title="План {{ row['plan'] }}"></div><div class="bar fact" style="width:{{ row['fact_width'] }}%" title="Факт {{ row['fact'] }}"></div></div><small>{{ row['fact'] }} / {{ row['plan'] }}</small></div>{% else %}<p class="muted">Нет данных за период</p>{% endfor %}<p class="legend"><i class="legend-plan"></i> План <i class="legend-fact"></i> Факт</p></section>
+  <section class="panel"><h2>Документация по дням</h2>{% for row in docs_chart %}<div class="chart-row"><span>{{ row['date'] }}</span><div class="bars"><div class="bar plan" style="width:{{ row['plan_width'] }}%" title="План {{ row['plan'] }}"></div><div class="bar fact" style="width:{{ row['fact_width'] }}%" title="Факт {{ row['fact'] }}"></div></div><small>{{ row['fact'] }} / {{ row['plan'] }}</small></div>{% else %}<p class="muted">Нет данных за период</p>{% endfor %}<p class="legend"><i class="legend-plan"></i> План <i class="legend-fact"></i> Факт</p></section>
+</div>

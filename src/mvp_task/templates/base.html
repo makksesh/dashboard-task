@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Производство — альфа{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css?v={{ asset_version }}">
+  <link rel="stylesheet" href="/static/compact.css?v={{ asset_version }}">
+</head>
+<body class="{% if not user %}login-body{% endif %}">
+  {% if user %}
+  <aside class="navigation">
+    <div class="brand"><span class="brand-mark">P</span><span>Производство<small>альфа-версия</small></span></div>
+    <div class="nav-label">РАЗДЕЛЫ</div>
+    <nav aria-label="Основное меню">
+      {% if user['role'] == 'director' %}
+      <a class="nav-item {% if active == 'dashboard' %}active{% endif %}" href="/dashboard">Панель директора</a>
+      <a class="nav-item {% if active == 'plans' %}active{% endif %}" href="/plans">План на день</a>
+      {% endif %}
+      {% for source, label in labels.items() %}
+        {% if user['role'] == 'director' or user['role'] == source %}
+        <a class="nav-item {% if active == source %}active{% endif %}" href="/tables/{{ source }}">{{ label }}</a>
+        {% endif %}
+      {% endfor %}
+    </nav>
+    <div class="nav-bottom">
+      <div class="user-name">{{ user['employee_name'] or 'Директор' }}<small>{{ user['username'] }}</small></div>
+      <form action="/logout" method="post"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="quiet-button" type="submit">Выйти</button></form>
+    </div>
+  </aside>
+  {% endif %}
+  <main class="content {% if not user %}login-content{% endif %}">
+    {% if flash %}<div class="notice {{ flash['kind'] }}" role="alert">{{ flash['text'] }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <script src="/static/app.js?v={{ asset_version }}" defer></script>
+</body>
+</html>

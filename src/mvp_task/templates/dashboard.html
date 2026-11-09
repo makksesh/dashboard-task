@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Панель директора · Производство{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div><h1>Панель директора</h1></div>
+  <form class="period-form" method="get" action="/dashboard">
+    <label>С<input type="date" name="start" value="{{ start.isoformat() }}"></label>
+    <label>По<input type="date" name="end" value="{{ end.isoformat() }}"></label>
+    <button class="secondary-button" type="submit">Показать</button>
+  </form>
+</header>
+<div id="dashboard-live-alert" class="notice error" role="alert" hidden></div>
+<div id="dashboard-live-content" data-start="{{ start.isoformat() }}" data-end="{{ end.isoformat() }}" data-cursor="{{ live_cursor }}">
+{% include "dashboard_live.html" %}
+</div>
+{% endblock %}

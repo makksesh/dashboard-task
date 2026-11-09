@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Вход · Производство{% endblock %}
+{% block content %}
+<section class="login-card">
+  <div class="login-logo">P</div>
+  <p class="eyebrow">АЛЬФА-ВЕРСИЯ</p>
+  <h1>Производство</h1>
+  <p class="muted">Вход для директора и сотрудников участков</p>
+  {% if error %}<div class="notice error" role="alert">{{ error }}</div>{% endif %}
+  <form action="/login" method="post" class="login-form">
+    <label>Логин<input name="username" type="text" autocomplete="username" required autofocus></label>
+    <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
+    <button class="primary-button" type="submit">Войти</button>
+  </form>
+</section>
+{% endblock %}

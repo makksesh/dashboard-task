@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}План на день · Производство{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">ПЛАНИРОВАНИЕ</p><h1>План на день</h1></div></header>
+<section class="panel daily-plan-panel" id="daily-plan">
+  <div class="panel-heading"><div><h2>Планы на выбранную дату</h2><p class="muted">Выберите дату: существующие планы появятся в полях ниже. Если записей нет, добавьте план для нужного участка.</p></div></div>
+  <form action="/plans#daily-plan" method="get" class="day-picker">
+    <label>Дата плана<input type="date" name="day" value="{{ day.isoformat() }}" required></label>
+    <button class="secondary-button" type="submit">Показать день</button>
+  </form>
+  <form action="/daily-plans" method="post" class="daily-plan-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="day" value="{{ day.isoformat() }}">
+    <div class="daily-plan-grid">
+      {% for source, label in labels.items() %}
+      <section class="daily-plan-source">
+        <h3>{{ label }}</h3>
+        {% if daily_rows[source] %}
+          {% for row in daily_rows[source] %}
+          <div class="daily-plan-row">
+            <div class="daily-plan-meta"><strong>{{ row['record_id'] }}</strong>{% if source == 'preparation' %}<small>Факт: {{ row['fact_qty'] if row['fact_qty'] is not none else 'ожидается' }}</small>{% elif source == 'documentation' %}<small>Факт: {{ row['fact_docs'] if row['fact_docs'] is not none else 'ожидается' }}</small>{% endif %}</div>
+            <input type="hidden" name="id_{{ source }}_{{ loop.index0 }}" value="{{ row['record_id'] }}">
+            <label>{{ 'Потребность' if source == 'welding_need' else 'План' }}<input type="number" name="plan_{{ source }}_{{ loop.index0 }}" min="0" step="1" value="{{ row[plan_fields[source]] if row[plan_fields[source]] is not none else '' }}" required></label>
+            {% if source != 'documentation' %}<label>Партия<input name="batch_{{ source }}_{{ loop.index0 }}" maxlength="100" value="{{ row['batch_id'] }}" required></label>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="hint">На эту дату строк ещё нет.</p>
+          <label>{{ 'Потребность' if source == 'welding_need' else 'План' }}<input type="number" name="new_{{ source }}" min="0" step="1" placeholder="Укажите план"></label>
+          {% if source != 'documentation' %}<label>Партия<input name="batch_{{ source }}" maxlength="100" placeholder="Например, LOT-09"></label><small class="hint">Нужна для связи партий.</small>{% endif %}
+        {% endif %}
+      </section>
+      {% endfor %}
+    </div>
+    <div class="daily-plan-footer"><span class="hint">Факт заготовки и документации позднее внесут сотрудники своих участков.</span><button class="primary-button" type="submit">Сохранить планы на {{ day.strftime('%d.%m.%Y') }}</button></div>
+  </form>
+</section>
+{% endblock %}
