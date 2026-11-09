@@ -1,5 +1,6 @@
 # Local credentials and configuration
 .mvp.env
+.compose.env
 .env
 .env.*
 !.env.example

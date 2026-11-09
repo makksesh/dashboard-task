@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mvp_task
+      POSTGRES_USER: mvp_task
+      POSTGRES_PASSWORD: ${MVP_DB_PASSWORD:?Set MVP_DB_PASSWORD in .compose.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mvp_task -d mvp_task"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://mvp_task:${MVP_DB_PASSWORD}@db:5432/mvp_task
+      MVP_SESSION_SECRET: ${MVP_SESSION_SECRET:?Set MVP_SESSION_SECRET in .compose.env}
+      DIRECTOR_PASSWORD: ${DIRECTOR_PASSWORD:?Set DIRECTOR_PASSWORD in .compose.env}
+      STAFF_PASSWORD: ${STAFF_PASSWORD:?Set STAFF_PASSWORD in .compose.env}
+    ports:
+      - "${APP_BIND_HOST:-127.0.0.1}:${APP_PORT:-8501}:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres_data:
