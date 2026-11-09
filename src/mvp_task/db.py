@@ -126,3 +126,39 @@ def authenticate(username: str, password: str) -> dict | None:
     if row and secrets.compare_digest(_hash_password(password, row["salt"]), row["password_hash"]):
         return {"username": row["username"], "role": row["role"], "employee_name": row["employee_name"]}
     return None
+
+
+DEMO_USERNAMES = ("director", "anna", "ivan", "maria", "oleg")
+DATA_TABLES = ("preparation", "welding_need", "documentation", "imports", "rejected_rows", "review_log")
+
+
+def data_counts() -> dict[str, int]:
+    """Counts shown to the director before the irreversible cleanup."""
+    with connect() as conn:
+        counts = {
+            table: conn.execute(f"SELECT COUNT(*) AS total FROM {table}").fetchone()["total"]
+            for table in DATA_TABLES
+        }
+        counts["other_users"] = conn.execute(
+            "SELECT COUNT(*) AS total FROM users WHERE username <> ALL(%s)",
+            (list(DEMO_USERNAMES),),
+        ).fetchone()["total"]
+    return counts
+
+
+def clear_business_data() -> dict[str, int]:
+    """Delete project data atomically, preserving the five demo accounts."""
+    with connect() as conn:
+        counts = {
+            table: conn.execute(f"SELECT COUNT(*) AS total FROM {table}").fetchone()["total"]
+            for table in DATA_TABLES
+        }
+        counts["other_users"] = conn.execute(
+            "SELECT COUNT(*) AS total FROM users WHERE username <> ALL(%s)",
+            (list(DEMO_USERNAMES),),
+        ).fetchone()["total"]
+        conn.execute(
+            "TRUNCATE preparation,welding_need,documentation,rejected_rows,review_log,imports RESTART IDENTITY"
+        )
+        conn.execute("DELETE FROM users WHERE username <> ALL(%s)", (list(DEMO_USERNAMES),))
+    return counts

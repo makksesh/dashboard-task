@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Очистить БД · Производство{% endblock %}
+{% block content %}
+<header class="page-header"><div><h1>Очистить БД</h1><p class="muted">Удаление рабочих данных с сохранением демо-пользователей.</p></div></header>
+<section class="panel clear-data-panel">
+  <div class="notice error">Это действие нельзя отменить. Будут удалены все строки заготовки, потребности сварки и документации, история загрузок и проверки, а также учётные записи кроме пяти демо-пользователей.</div>
+  <h2>Сейчас в базе</h2>
+  <ul class="clear-data-counts">
+    <li>Заготовка: <strong>{{ counts['preparation'] }}</strong></li>
+    <li>Потребность сварки: <strong>{{ counts['welding_need'] }}</strong></li>
+    <li>Документация: <strong>{{ counts['documentation'] }}</strong></li>
+    <li>Загрузки: <strong>{{ counts['imports'] }}</strong></li>
+    <li>Отклонённые строки: <strong>{{ counts['rejected_rows'] }}</strong></li>
+    <li>История изменений: <strong>{{ counts['review_log'] }}</strong></li>
+    <li>Другие пользователи: <strong>{{ counts['other_users'] }}</strong></li>
+  </ul>
+  <form action="/admin/clear-data" method="post" class="clear-data-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="clear-confirmation">Для подтверждения введите <strong>ОЧИСТИТЬ</strong></label>
+    <input id="clear-confirmation" name="confirmation" autocomplete="off" required>
+    <button class="delete-button" type="submit">Удалить данные</button>
+  </form>
+</section>
+{% endblock %}

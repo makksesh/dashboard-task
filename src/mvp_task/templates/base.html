@@ -22,6 +22,9 @@
         <a class="nav-item {% if active == source %}active{% endif %}" href="/tables/{{ source }}">{{ label }}</a>
         {% endif %}
       {% endfor %}
+      {% if user['role'] == 'director' %}
+      <a class="nav-item nav-danger {% if active == 'clear-data' %}active{% endif %}" href="/admin/clear-data">Очистить БД</a>
+      {% endif %}
     </nav>
     <div class="nav-bottom">
       <div class="user-name">{{ user['employee_name'] or 'Директор' }}<small>{{ user['username'] }}</small></div>

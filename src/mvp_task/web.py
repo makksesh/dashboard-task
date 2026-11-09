@@ -17,7 +17,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.datastructures import UploadFile
 from starlette.middleware.sessions import SessionMiddleware
 
-from .db import authenticate, connect
+from .db import authenticate, clear_business_data, connect, data_counts
 from .domain import LABELS, SPECS
 from .ingest import import_file
 from .report import make_report
@@ -227,6 +227,37 @@ async def logout(request: Request):
     _check_csrf(request, str(form.get("csrf", "")))
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
+
+
+@app.get("/admin/clear-data", response_class=HTMLResponse)
+def clear_data_page(request: Request):
+    user = _user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user["role"] != "director":
+        raise HTTPException(status_code=403, detail="Доступно только директору")
+    return templates.TemplateResponse(
+        request=request, name="clear_data.html",
+        context={**_base(request, user, "clear-data"), "counts": data_counts()},
+    )
+
+
+@app.post("/admin/clear-data")
+async def clear_data(request: Request):
+    user = _user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user["role"] != "director":
+        raise HTTPException(status_code=403, detail="Доступно только директору")
+    form = await request.form()
+    _check_csrf(request, str(form.get("csrf", "")))
+    if str(form.get("confirmation", "")) != "ОЧИСТИТЬ":
+        _flash(request, "error", "Для очистки введите ОЧИСТИТЬ точно, без дополнительных символов")
+        return RedirectResponse("/admin/clear-data", status_code=303)
+    counts = clear_business_data()
+    total = sum(counts.values())
+    _flash(request, "success", f"Данные очищены: удалено {total} записей. Пять демо-пользователей сохранены.")
+    return RedirectResponse("/dashboard", status_code=303)
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
